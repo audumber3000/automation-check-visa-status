@@ -111,7 +111,7 @@ def send_whatsapp_message(message):
 
 # Initialize scheduler
 scheduler = BackgroundScheduler(timezone='Asia/Kolkata')
-scheduler.add_job(func=check_visa_status, trigger='cron', hour=11, minute=56)
+scheduler.add_job(func=check_visa_status, trigger='cron', hour=11, minute=57)
 scheduler.start()
 
 @app.route('/')
