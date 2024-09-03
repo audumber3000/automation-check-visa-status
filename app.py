@@ -17,7 +17,10 @@ def generate_date_strings():
     date_strings = []
     for i in range(3):  # Check for the last 3 days
         date = datetime.now() - timedelta(days=i)
-        date_strings.append(date.strftime('%d %B %Y'))
+        day = date.strftime('%d')  # Get the day as a string
+        if day.startswith('0'):  # Check if it starts with a zero
+            day = day[1:]  # Remove the leading zero
+        date_strings.append(f'{day} {date.strftime("%B %Y")}')
     return date_strings
 
 # Function to scrape the webpage and extract the latest ODS file URL
@@ -32,6 +35,7 @@ def get_latest_visa_decision_url():
             
             date_strings = generate_date_strings()
             for date_str in date_strings:
+                print(date_str)
                 link_text = f'Visa decisions made from 1 January 2024 to {date_str}'
                 latest_link = soup.find('a', href=True, text=link_text)
                 
@@ -72,14 +76,14 @@ def check_visa_status():
                 df_cleaned.columns = ['Application Number', 'Decision']
                 
                 # Check the status of the application number
-               # application_number = '69321552'  # Replace with your actual application number
-                application_number = 69587592 #testing
+                #application_number = 69321552  # Replace with your actual application number
+                application_number = 69587592 #testingS
                 application_status = df_cleaned[df_cleaned['Application Number'] == application_number]
                 logging.info(f"Available Application Numbers: {df_cleaned['Application Number'].unique()[:10]}")  # Log the first 10 unique application numbers
                 logging.info(f"{application_status}")
                 
                 if application_status.empty:
-                    message = "Not found"
+                    message = f"Application Number {application_number}: Not Found"
                 else:
                     decision = application_status.iloc[0]['Decision']
                     message = f"Application Number {application_number}: {decision}"
@@ -99,12 +103,15 @@ def check_visa_status():
 
 # Dummy function for WhatsApp messaging (replace with your actual API integration)
 def send_whatsapp_message(message):
-    # Implement your API call here to send the message
+    url = "https://panel.rapiwha.com/send_message.php"
+    querystring = {"apikey":"7DSIVLYJC9QVCVH06SVQ","number":"917798121777","text": { datetime.date , message}}
+    response = requests.request("GET", url, params=querystring)
+    logging.info(f"Respones from RAPIWHA API : {response}")
     logging.info(f"WhatsApp message sent: {message}")
 
 # Initialize scheduler
 scheduler = BackgroundScheduler(timezone='Asia/Kolkata')
-scheduler.add_job(func=check_visa_status, trigger='cron', hour=14, minute=1)
+scheduler.add_job(func=check_visa_status, trigger='cron', hour=11, minute=56)
 scheduler.start()
 
 @app.route('/')
@@ -112,4 +119,5 @@ def index():
     return "Visa Status Checker is running."
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+    # app.run(host='0.0.0.0', port=5000)
