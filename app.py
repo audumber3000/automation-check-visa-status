@@ -1,4 +1,5 @@
 import requests
+import os
 from bs4 import BeautifulSoup
 import pandas as pd
 from datetime import datetime, timedelta
@@ -6,6 +7,7 @@ from flask import Flask
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 import logging
+
 
 app = Flask(__name__)
 
@@ -63,10 +65,17 @@ def check_visa_status():
             }
             response = requests.get(url, headers=headers, timeout=30)
             if response.status_code == 200:
+                file_path = 'Visa_Decision.ods'
+ 
+               # Remove the file if it already exists
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    logging.info(f"Existing file '{file_path}' removed.")
+
                 # Save the file locally
-                with open('Visa_Decision.ods', 'wb') as file:
+                with open(file_path, 'wb') as file:
                     file.write(response.content)
-                logging.info("File downloaded successfully.")
+                    logging.info("File downloaded successfully.")
                 
                 # Read the ODS file using pandas
                 df = pd.read_excel('Visa_Decision.ods', engine='odf', skiprows=6)
@@ -76,17 +85,17 @@ def check_visa_status():
                 df_cleaned.columns = ['Application Number', 'Decision']
                 
                 # Check the status of the application number
-                #application_number = 69321552  # Replace with your actual application number
-                application_number = 69587592 #testingS
+                application_number = 69321552  # Replace with your actual application number
+                #application_number = 69587592 #testingS
                 application_status = df_cleaned[df_cleaned['Application Number'] == application_number]
                 logging.info(f"Available Application Numbers: {df_cleaned['Application Number'].unique()[:10]}")  # Log the first 10 unique application numbers
                 logging.info(f"{application_status}")
-                
+                today = datetime.now().strftime('%d %B %Y')
                 if application_status.empty:
-                    message = f"Application Number {application_number}: Not Found"
+                    message = f"{today} | Application Number {application_number}: Not Found"
                 else:
                     decision = application_status.iloc[0]['Decision']
-                    message = f"Application Number {application_number}: {decision}"
+                    message = f"{today} | Application Number {application_number}: {decision}"
                 
                 # Send WhatsApp message
                 send_whatsapp_message(message)
@@ -104,14 +113,15 @@ def check_visa_status():
 # Dummy function for WhatsApp messaging (replace with your actual API integration)
 def send_whatsapp_message(message):
     url = "https://panel.rapiwha.com/send_message.php"
-    querystring = {"apikey":"7DSIVLYJC9QVCVH06SVQ","number":"917798121777","text": { datetime.date , message}}
+    querystring = {"apikey":"7DSIVLYJC9QVCVH06SVQ","number":"917798121777","text": {message}}
     response = requests.request("GET", url, params=querystring)
     logging.info(f"Respones from RAPIWHA API : {response}")
     logging.info(f"WhatsApp message sent: {message}")
 
 # Initialize scheduler
 scheduler = BackgroundScheduler(timezone='Asia/Kolkata')
-scheduler.add_job(func=check_visa_status, trigger='cron', hour=12, minute=00)
+scheduler.add_job(func=check_visa_status, trigger='cron', hour=11, minute=30)
+scheduler.add_job(func=check_visa_status, trigger='cron', hour=18, minute=30)
 scheduler.start()
 
 @app.route('/')
