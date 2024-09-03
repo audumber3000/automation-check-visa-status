@@ -111,7 +111,7 @@ def send_whatsapp_message(message):
 
 # Initialize scheduler
 scheduler = BackgroundScheduler(timezone='Asia/Kolkata')
-scheduler.add_job(func=check_visa_status, trigger='cron', hour=11, minute=57)
+scheduler.add_job(func=check_visa_status, trigger='cron', hour=12, minute=00)
 scheduler.start()
 
 @app.route('/')
@@ -119,5 +119,5 @@ def index():
     return "Visa Status Checker is running."
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
-    # app.run(host='0.0.0.0', port=5000)
+    # app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+    app.run(host='0.0.0.0', port=5000)
